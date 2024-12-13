@@ -5,11 +5,13 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class MainActivity extends AppCompatActivity {
     private NoteAdapter adapter;
@@ -22,6 +24,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Toolbar'ı ayarla
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         // Veritabanını başlat
         AppDatabase db = AppDatabase.getInstance(this);
         noteDao = db.noteDao();
@@ -33,23 +39,30 @@ public class MainActivity extends AppCompatActivity {
         adapter = new NoteAdapter(notes, this, new NoteAdapter.OnNoteActionListener() {
             @Override
             public void onUpdate(Note note) {
-                // Güncelleme işlemi
+                // Not düzenleme işlemi için AddNoteActivity'yi başlat
                 Intent intent = new Intent(MainActivity.this, AddNoteActivity.class);
                 intent.putExtra("id", note.getId());
                 intent.putExtra("title", note.getTitle());
                 intent.putExtra("content", note.getContent());
-                startActivityForResult(intent, 2); // Güncelleme için
+                startActivityForResult(intent, 2); // Güncelleme işlemi için requestCode = 2
             }
 
             @Override
             public void onDelete(Note note) {
-                // Silme işlemi
-                executorService.execute(() -> {
-                    noteDao.delete(note);
-                    notes.remove(note);
-                    runOnUiThread(() -> adapter.notifyDataSetChanged());
-                });
+                new MaterialAlertDialogBuilder(MainActivity.this)
+                        .setTitle("Delete Note")
+                        .setMessage("Are you sure you want to delete this note?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            executorService.execute(() -> {
+                                noteDao.delete(note);
+                                notes.remove(note);
+                                runOnUiThread(() -> adapter.notifyDataSetChanged());
+                            });
+                        })
+                        .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                        .show();
             }
+
 
             @Override
             public void onNoteClick(Note note) {
@@ -60,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent); // Detay ekranına geçiş
             }
         });
-
 
         recyclerView.setAdapter(adapter);
 
