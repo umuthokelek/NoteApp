@@ -1,3 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">NoteApp</string>
+    <string name="app_name">Not Defteri</string>
+    
+    <!-- Login/Register -->
+    <string name="hint_email">E-posta</string>
+    <string name="hint_password">Şifre</string>
+    <string name="btn_login">Giriş Yap</string>
+    <string name="btn_register">Kayıt Ol</string>
+    <string name="error_fill_fields">Lütfen tüm alanları doldurun</string>
+    <string name="error_email_exists">Bu e-posta adresi zaten kayıtlı</string>
+    <string name="error_invalid_credentials">Hatalı e-posta veya şifre</string>
+
+    <!-- Profile -->
+    <string name="title_profile">Profil</string>
+    <string name="hint_name">Ad Soyad</string>
+    <string name="hint_phone">Telefon</string>
+    <string name="hint_current_password">Mevcut Şifre</string>
+    <string name="hint_new_password">Yeni Şifre</string>
+    <string name="btn_save">Değişiklikleri Kaydet</string>
+    <string name="btn_logout">Çıkış Yap</string>
+    <string name="menu_edit">Düzenle</string>
+    <string name="success_profile_updated">Profil güncellendi</string>
+    <string name="error_update_failed">Güncelleme başarısız oldu</string>
+    <string name="error_current_password">Mevcut şifre hatalı</string>
+    <string name="error_permission_required">Resim seçmek için izin gerekli</string>
+    <string name="error_image_load">Resim yüklenirken hata oluştu</string>
+    
+    <!-- Reset Photo Dialog -->
+    <string name="dialog_reset_photo_title">Profil Fotoğrafını Sıfırla</string>
+    <string name="dialog_reset_photo_message">Profil fotoğrafını varsayılan fotoğraf ile değiştirmek istiyor musunuz?</string>
+    <string name="dialog_yes">Evet</string>
+    <string name="dialog_cancel">İptal</string>
+    <string name="success_photo_reset">Profil fotoğrafı sıfırlandı</string>
+
+    <!-- Notes -->
+    <string name="title_notes">Notlar</string>
+    <string name="hint_note_title">Başlık</string>
+    <string name="hint_note_content">İçerik</string>
+    <string name="dialog_delete_title">Notu Sil</string>
+    <string name="dialog_delete_message">Bu notu silmek istediğinizden emin misiniz?</string>
+
+    <!-- Main Activity -->
+    <string name="title_main">Notlarım</string>
+    <string name="action_add_note">Not Ekle</string>
+    <string name="empty_notes">Henüz not eklenmemiş</string>
+    <string name="search_hint">Not ara...</string>
+
+    <!-- Add/Edit Note -->
+    <string name="title_add_note">Yeni Not</string>
+    <string name="title_edit_note">Notu Düzenle</string>
+    <string name="hint_title">Başlık</string>
+    <string name="hint_content">İçerik</string>
+    <string name="btn_save_note">Kaydet</string>
+    <string name="error_empty_title">Başlık boş olamaz</string>
+    <string name="error_empty_content">İçerik boş olamaz</string>
+    <string name="success_note_saved">Not kaydedildi</string>
+    <string name="success_note_updated">Not güncellendi</string>
+
+    <!-- Note Actions -->
+    <string name="action_edit">Düzenle</string>
+    <string name="action_delete">Sil</string>
+    <string name="action_share">Paylaş</string>
+    <string name="dialog_delete_note_title">Notu Sil</string>
+    <string name="dialog_delete_note_message">Bu notu silmek istediğinizden emin misiniz?</string>
+    <string name="success_note_deleted">Not silindi</string>
+    <string name="share_note_title">Notu Paylaş</string>
+    <string name="share_note_via">Şununla paylaş:</string>
+
+    <string name="created_at">Oluşturulma: %s</string>
+    <string name="last_edited">Son düzenleme: %s</string>
+    <string name="created_and_edited">Oluşturulma: %1$s\nSon düzenleme: %2$s</string>
 </resources>

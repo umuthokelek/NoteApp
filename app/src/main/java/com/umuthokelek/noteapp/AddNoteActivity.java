@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -30,9 +31,9 @@ public class AddNoteActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
         // UI bileşenlerini tanımla
-        EditText titleEditText = findViewById(R.id.edit_note_title);
-        EditText contentEditText = findViewById(R.id.edit_note_content);
-        Button saveButton = findViewById(R.id.btn_save_note);
+        titleEditText = findViewById(R.id.edit_title);
+        contentEditText = findViewById(R.id.edit_content);
+        Button saveButton = findViewById(R.id.btn_save);
 
         // Gelen verileri kontrol et
         Intent intent = getIntent();
@@ -40,13 +41,13 @@ public class AddNoteActivity extends AppCompatActivity {
 
         // Toolbar başlığını ve buton metnini dinamik olarak ayarla
         if (isUpdate) {
-            getSupportActionBar().setTitle("Update Note");
-            saveButton.setText("Update"); // Buton metnini "Update" yap
+            getSupportActionBar().setTitle(R.string.title_edit_note);
+            saveButton.setText(R.string.btn_save_note);
             titleEditText.setText(intent.getStringExtra("title"));
             contentEditText.setText(intent.getStringExtra("content"));
         } else {
-            getSupportActionBar().setTitle("Add Note");
-            saveButton.setText("Add"); // Buton metnini "Save" yap
+            getSupportActionBar().setTitle(R.string.title_add_note);
+            saveButton.setText(R.string.btn_save_note);
         }
 
         // Kaydet butonu tıklama işlevi
@@ -54,12 +55,25 @@ public class AddNoteActivity extends AppCompatActivity {
             String title = titleEditText.getText().toString();
             String content = contentEditText.getText().toString();
 
+            // Boş kontrolleri
+            if (title.isEmpty()) {
+                Toast.makeText(this, R.string.error_empty_title, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (content.isEmpty()) {
+                Toast.makeText(this, R.string.error_empty_content, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             Intent resultIntent = new Intent();
             resultIntent.putExtra("title", title);
             resultIntent.putExtra("content", content);
 
             if (isUpdate) {
                 resultIntent.putExtra("id", intent.getIntExtra("id", -1));
+                Toast.makeText(this, R.string.success_note_updated, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, R.string.success_note_saved, Toast.LENGTH_SHORT).show();
             }
 
             setResult(RESULT_OK, resultIntent);

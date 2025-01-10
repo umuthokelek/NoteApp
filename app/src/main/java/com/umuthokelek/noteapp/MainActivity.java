@@ -12,17 +12,27 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import android.view.Menu;
+import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity {
     private NoteAdapter adapter;
     private NoteDao noteDao;
     private ExecutorService executorService = Executors.newSingleThreadExecutor(); // Arka plan iş parçacığı
     private List<Note> notes = new ArrayList<>();
+    private int currentProfileId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        currentProfileId = getIntent().getIntExtra("profileId", -1);
+        if (currentProfileId == -1) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
 
         // Toolbar'ı ayarla
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
@@ -50,16 +60,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDelete(Note note) {
                 new MaterialAlertDialogBuilder(MainActivity.this)
-                        .setTitle("Delete Note")
-                        .setMessage("Are you sure you want to delete this note?")
-                        .setPositiveButton("Yes", (dialog, which) -> {
+                        .setTitle(R.string.dialog_delete_note_title)
+                        .setMessage(R.string.dialog_delete_note_message)
+                        .setPositiveButton(R.string.dialog_yes, (dialog, which) -> {
                             executorService.execute(() -> {
                                 noteDao.delete(note);
                                 notes.remove(note);
                                 runOnUiThread(() -> adapter.notifyDataSetChanged());
                             });
                         })
-                        .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                        .setNegativeButton(R.string.dialog_cancel, null)
                         .show();
             }
 
@@ -70,7 +80,9 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, NoteDetailActivity.class);
                 intent.putExtra("title", note.getTitle());
                 intent.putExtra("content", note.getContent());
-                startActivity(intent); // Detay ekranına geçiş
+                intent.putExtra("createdAt", note.getCreatedAt());  // Oluşturulma tarihini ekle
+                intent.putExtra("updatedAt", note.getUpdatedAt());  // Güncellenme tarihini ekle
+                startActivity(intent);
             }
         });
 
@@ -86,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         // Veritabanından notları yükle
         executorService.execute(() -> {
             notes.clear();
-            notes.addAll(noteDao.getAllNotes());
+            notes.addAll(noteDao.getAllNotesForProfile(currentProfileId));
             runOnUiThread(() -> adapter.notifyDataSetChanged());
         });
     }
@@ -100,25 +112,55 @@ public class MainActivity extends AppCompatActivity {
             String content = data.getStringExtra("content");
 
             if (requestCode == 1) { // Yeni not ekleme
-                Note note = new Note(title, content);
+                Note note = new Note(title, content, currentProfileId);
                 executorService.execute(() -> {
                     noteDao.insert(note);
                     notes.clear();
-                    notes.addAll(noteDao.getAllNotes());
+                    notes.addAll(noteDao.getAllNotesForProfile(currentProfileId));
                     runOnUiThread(() -> adapter.notifyDataSetChanged());
                 });
             } else if (requestCode == 2) { // Güncelleme
                 int id = data.getIntExtra("id", -1);
-                Note updatedNote = new Note(title, content);
-                updatedNote.setId(id);
+                
+                // Güncellenecek notun pozisyonunu bul
+                int notePosition = -1;
+                for (int i = 0; i < notes.size(); i++) {
+                    if (notes.get(i).getId() == id) {
+                        notePosition = i;
+                        break;
+                    }
+                }
 
-                executorService.execute(() -> {
-                    noteDao.update(updatedNote);
-                    notes.clear();
-                    notes.addAll(noteDao.getAllNotes());
-                    runOnUiThread(() -> adapter.notifyDataSetChanged());
-                });
+                if (notePosition != -1) {
+                    Note updatedNote = new Note(title, content, currentProfileId);
+                    updatedNote.setId(id);
+                    updatedNote.setCreatedAt(notes.get(notePosition).getCreatedAt()); // Eski oluşturulma tarihini koru
+                    updatedNote.setUpdatedAt(System.currentTimeMillis()); // Yeni güncelleme tarihi
+                    
+                    executorService.execute(() -> {
+                        noteDao.update(updatedNote);
+                        notes.clear();
+                        notes.addAll(noteDao.getAllNotesForProfile(currentProfileId));
+                        runOnUiThread(() -> adapter.notifyDataSetChanged());
+                    });
+                }
             }
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_profile) {
+            Intent intent = new Intent(this, ProfileActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
