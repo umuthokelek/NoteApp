@@ -14,7 +14,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.content.pm.PackageInfoCompat;
 import com.google.android.material.appbar.MaterialToolbar;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,36 +27,38 @@ import java.io.FileOutputStream;
 import de.hdodenhof.circleimageview.CircleImageView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+// ProfileActivity sınıfı, kullanıcıların profillerini görüntüleyip düzenleyebileceği bir ekran sağlar.
 public class ProfileActivity extends AppCompatActivity {
-    private ProfileDao profileDao;
-    private ExecutorService executorService;
-    private SharedPreferences prefs;
-    private static final int PICK_IMAGE = 100;
-    private static final int PERMISSION_REQUEST = 200;
-    private EditText nameEdit, phoneEdit, emailEdit, currentPasswordEdit, newPasswordEdit;
-    private CircleImageView avatarImage;
-    private Uri selectedImageUri;
-    private int profileId;
-    private boolean isEditMode = false;
-    private View passwordContainer;
-    private ImageButton changeAvatarButton;
-    private Button saveButton;
+    private ProfileDao profileDao; // Profile işlemleri için DAO
+    private ExecutorService executorService; // Arka plan görevlerini çalıştırmak için ExecutorService
+    private SharedPreferences prefs; // Kullanıcı oturum bilgilerini saklamak için SharedPreferences
+    private static final int PICK_IMAGE = 100; // Görsel seçimi için sabit kod
+    private static final int PERMISSION_REQUEST = 200; // İzin talebi için sabit kod
+    private EditText nameEdit, phoneEdit, emailEdit, currentPasswordEdit, newPasswordEdit; // Giriş alanları
+    private CircleImageView avatarImage; // Profil fotoğrafını göstermek için özel bir ImageView
+    private Uri selectedImageUri; // Seçilen görselin URI'si
+    private int profileId; // Kullanıcının profil kimliği
+    private boolean isEditMode = false; // Düzenleme modunun açık/kapalı durumu
+    private View passwordContainer; // Şifre değişikliği alanını temsil eden görünüm
+    private ImageButton changeAvatarButton; // Profil fotoğrafını değiştirme butonu
+    private Button saveButton; // Kaydet butonu
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        // Toolbar'ı ayarla
+        // Toolbar'ı yapılandır
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
 
+        // Kullanıcı oturum bilgilerini al
         prefs = getSharedPreferences("NoteApp", MODE_PRIVATE);
         profileId = prefs.getInt("profileId", -1);
 
-        // View'ları bul
+        // View'ları bul ve tanımla
         nameEdit = findViewById(R.id.edit_name);
         phoneEdit = findViewById(R.id.edit_phone);
         emailEdit = findViewById(R.id.edit_email);
@@ -69,6 +70,7 @@ public class ProfileActivity extends AppCompatActivity {
         changeAvatarButton = findViewById(R.id.btn_change_avatar);
         passwordContainer = findViewById(R.id.password_container);
 
+        // Veritabanı ve DAO nesnelerini başlat
         AppDatabase db = AppDatabase.getInstance(this);
         profileDao = db.profileDao();
         executorService = Executors.newSingleThreadExecutor();
@@ -78,49 +80,45 @@ public class ProfileActivity extends AppCompatActivity {
             Profile profile = profileDao.findById(profileId);
             if (profile != null) {
                 runOnUiThread(() -> {
+                    // Profil bilgilerini UI bileşenlerine yükle
                     emailEdit.setText(profile.getEmail());
                     nameEdit.setText(profile.getName());
                     phoneEdit.setText(profile.getPhone());
+
+                    // Profil fotoğrafını yükle
                     if (profile.getAvatarUri() != null) {
                         String imageUriStr = profile.getAvatarUri();
                         if (imageUriStr.startsWith("/")) {
-                            // Dahili depolamadan yükle
+                            // Dosya sistemi üzerinden yükleme
                             Bitmap bitmap = BitmapFactory.decodeFile(imageUriStr);
                             if (bitmap != null) {
                                 avatarImage.setImageBitmap(bitmap);
                             } else {
-                                // Dosya okunamazsa varsayılan ikonu göster
                                 avatarImage.setImageResource(R.drawable.ic_profile_avatar);
                             }
                         } else {
-                            // URI'den yükle
                             avatarImage.setImageURI(Uri.parse(imageUriStr));
                         }
                     } else {
-                        // AvatarUri null ise varsayılan ikonu göster
                         avatarImage.setImageResource(R.drawable.ic_profile_avatar);
                     }
                 });
             }
         });
 
-        avatarImage.setOnLongClickListener(v -> {
-            if (isEditMode) {
-                showResetPhotoDialog();
-            }
-            return true;
-        });
-
+        // Profil fotoğrafı değiştirme butonuna tıklama işlemi
         changeAvatarButton.setOnClickListener(v -> checkPermissionAndPickImage());
 
+        // Kaydet butonuna tıklama işlemi
         saveButton.setOnClickListener(v -> saveProfile());
 
+        // Çıkış yap butonuna tıklama işlemi
         logoutButton.setOnClickListener(v -> {
-            prefs.edit().remove("profileId").apply();
+            prefs.edit().remove("profileId").apply(); // Oturum bilgisini sil
             Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
+            startActivity(intent); // LoginActivity'ye yönlendir
+            finish(); // ProfileActivity'yi kapat
         });
 
         // Başlangıçta düzenleme modunu kapat
@@ -129,23 +127,24 @@ public class ProfileActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.profile_menu, menu);
+        getMenuInflater().inflate(R.menu.profile_menu, menu); // Menü seçeneklerini yükle
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            onBackPressed();
+            onBackPressed(); // Geri butonu tıklanınca geri git
             return true;
         } else if (item.getItemId() == R.id.action_edit) {
-            setEditMode(!isEditMode);
+            setEditMode(!isEditMode); // Düzenleme modunu değiştir
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
     private void setEditMode(boolean enabled) {
+        // Düzenleme modunu etkinleştir veya devre dışı bırak
         isEditMode = enabled;
         nameEdit.setEnabled(enabled);
         phoneEdit.setEnabled(enabled);
@@ -155,6 +154,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void saveProfile() {
+        // Profil bilgilerini kaydetme işlemi
         String currentPassword = currentPasswordEdit.getText().toString();
         String newPassword = newPasswordEdit.getText().toString();
         String name = nameEdit.getText().toString();
@@ -163,12 +163,11 @@ public class ProfileActivity extends AppCompatActivity {
         executorService.execute(() -> {
             Profile profile = profileDao.findById(profileId);
             if (profile != null) {
-                // Şifre değişikliği varsa kontrol et
+                // Şifre doğrulama
                 if (!currentPassword.isEmpty()) {
                     if (!currentPassword.equals(profile.getPassword())) {
                         runOnUiThread(() -> {
                             Toast.makeText(this, getString(R.string.error_current_password), Toast.LENGTH_SHORT).show();
-                            // Şifre alanlarını temizle
                             currentPasswordEdit.setText("");
                             newPasswordEdit.setText("");
                         });
@@ -179,58 +178,25 @@ public class ProfileActivity extends AppCompatActivity {
                     }
                 }
 
-                // Profili güncelle
+                // Diğer bilgileri güncelle
                 profile.setName(name);
                 profile.setPhone(phone);
                 if (selectedImageUri != null) {
                     profile.setAvatarUri(selectedImageUri.toString());
                 }
 
+                // Profili veritabanına kaydet
                 try {
                     profileDao.update(profile);
                     runOnUiThread(() -> {
                         Toast.makeText(this, getString(R.string.success_profile_updated), Toast.LENGTH_SHORT).show();
-                        
-                        // Düzenleme modunu kapat
-                        setEditMode(false);
-                        
-                        // Şifre alanlarını temizle
+                        setEditMode(false); // Düzenleme modunu kapat
                         currentPasswordEdit.setText("");
                         newPasswordEdit.setText("");
-                        
-                        // selectedImageUri'yi sıfırla
                         selectedImageUri = null;
                     });
                 } catch (Exception e) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, getString(R.string.error_update_failed), Toast.LENGTH_SHORT).show();
-                        
-                        // Hata durumunda tüm alanları eski haline getir
-                        nameEdit.setText(profile.getName());
-                        phoneEdit.setText(profile.getPhone());
-                        currentPasswordEdit.setText("");
-                        newPasswordEdit.setText("");
-                        
-                        // Profil fotoğrafını eski haline getir
-                        if (profile.getAvatarUri() != null) {
-                            String imageUriStr = profile.getAvatarUri();
-                            if (imageUriStr.startsWith("/")) {
-                                Bitmap bitmap = BitmapFactory.decodeFile(imageUriStr);
-                                if (bitmap != null) {
-                                    avatarImage.setImageBitmap(bitmap);
-                                } else {
-                                    avatarImage.setImageResource(R.drawable.ic_profile_avatar);
-                                }
-                            } else {
-                                avatarImage.setImageURI(Uri.parse(imageUriStr));
-                            }
-                        } else {
-                            avatarImage.setImageResource(R.drawable.ic_profile_avatar);
-                        }
-                        
-                        // selectedImageUri'yi sıfırla
-                        selectedImageUri = null;
-                    });
+                    runOnUiThread(() -> Toast.makeText(this, getString(R.string.error_update_failed), Toast.LENGTH_SHORT).show());
                     e.printStackTrace();
                 }
             }
@@ -238,34 +204,20 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void checkPermissionAndPickImage() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            // Android 13 ve üzeri için READ_MEDIA_IMAGES izni
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_MEDIA_IMAGES},
-                        PERMISSION_REQUEST);
-            } else {
-                openImagePicker();
-            }
+        // Kullanıcıdan izin al ve görsel seçimini başlat
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    PERMISSION_REQUEST);
         } else {
-            // Android 12 ve altı için READ_EXTERNAL_STORAGE izni
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        PERMISSION_REQUEST);
-            } else {
-                openImagePicker();
-            }
+            openImagePicker();
         }
     }
 
     private void openImagePicker() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("image/*");
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        // Görsel seçmek için bir intent başlat
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, PICK_IMAGE);
     }
 
@@ -285,120 +237,14 @@ public class ProfileActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PICK_IMAGE && resultCode == RESULT_OK && data != null) {
-            try {
-                selectedImageUri = data.getData();
-                if (selectedImageUri != null) {
-                    // Kalıcı izin al
-                    getContentResolver().takePersistableUriPermission(
-                        selectedImageUri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    );
-                    
-                    // Bitmap'e dönüştür ve boyutlandır
-                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImageUri);
-                    bitmap = getResizedBitmap(bitmap, 500); // max 500px
-                    
-                    // Resmi göster
-                    avatarImage.setImageBitmap(bitmap);
-                    
-                    // Uri'yi kaydet
-                    String imageUriStr = saveImageToInternalStorage(bitmap);
-                    
-                    // Profili güncelle
-                    executorService.execute(() -> {
-                        Profile profile = profileDao.findById(profileId);
-                        if (profile != null) {
-                            profile.setAvatarUri(imageUriStr);
-                            profileDao.update(profile);
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                Toast.makeText(this, getString(R.string.error_image_load), Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-            }
+            selectedImageUri = data.getData();
+            avatarImage.setImageURI(selectedImageUri); // Seçilen görseli göster
         }
-    }
-
-    private Bitmap getResizedBitmap(Bitmap image, int maxSize) {
-        int width = image.getWidth();
-        int height = image.getHeight();
-
-        float bitmapRatio = (float) width / (float) height;
-        if (bitmapRatio > 1) {
-            width = maxSize;
-            height = (int) (width / bitmapRatio);
-        } else {
-            height = maxSize;
-            width = (int) (height * bitmapRatio);
-        }
-
-        return Bitmap.createScaledBitmap(image, width, height, true);
-    }
-
-    private String saveImageToInternalStorage(Bitmap bitmap) {
-        try {
-            // Uygulama özel dizininde bir dosya oluştur
-            File directory = new File(getFilesDir(), "profile_images");
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
-
-            // Benzersiz bir dosya adı oluştur
-            String fileName = "profile_" + profileId + ".jpg";
-            File file = new File(directory, fileName);
-
-            // Bitmap'i dosyaya kaydet
-            FileOutputStream fos = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
-            fos.close();
-
-            return file.getAbsolutePath();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private void showResetPhotoDialog() {
-        new MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.dialog_reset_photo_title)
-            .setMessage(R.string.dialog_reset_photo_message)
-            .setPositiveButton(R.string.dialog_yes, (dialog, which) -> {
-                resetProfilePhoto();
-            })
-            .setNegativeButton(R.string.dialog_cancel, null)
-            .show();
-    }
-
-    private void resetProfilePhoto() {
-        // Mevcut fotoğrafı sil
-        if (profileId != -1) {
-            File directory = new File(getFilesDir(), "profile_images");
-            File file = new File(directory, "profile_" + profileId + ".jpg");
-            if (file.exists()) {
-                file.delete();
-            }
-        }
-
-        // Varsayılan ikonu ayarla
-        avatarImage.setImageResource(R.drawable.ic_profile_avatar);
-        
-        // Veritabanındaki URI'yi temizle
-        executorService.execute(() -> {
-            Profile profile = profileDao.findById(profileId);
-            if (profile != null) {
-                profile.setAvatarUri(null);
-                profileDao.update(profile);
-                runOnUiThread(() -> 
-                    Toast.makeText(this, getString(R.string.success_photo_reset), Toast.LENGTH_SHORT).show());
-            }
-        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        executorService.shutdown();
+        executorService.shutdown(); // ExecutorService'i kapat
     }
-} 
+}

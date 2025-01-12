@@ -7,33 +7,37 @@ import androidx.room.ForeignKey;
 
 import java.io.Serializable;
 
-@Entity(tableName = "notes", 
-        indices = {@Index("profileId")},
+// Note sınıfı, Room veritabanında "notes" adında bir tablo olarak temsil edilir.
+@Entity(
+        tableName = "notes", // Tablo adı
+        indices = {@Index("profileId")}, // profileId alanına indeks eklenerek sorgular hızlandırılır.
         foreignKeys = @ForeignKey(
-            entity = Profile.class,
-            parentColumns = "id",
-            childColumns = "profileId",
-            onDelete = ForeignKey.CASCADE
-        ))
+                entity = Profile.class, // Bağlantılı tablo: Profile tablosu
+                parentColumns = "id", // Profile tablosunun birincil anahtar sütunu
+                childColumns = "profileId", // Bu tablodaki foreign key sütunu
+                onDelete = ForeignKey.CASCADE // Profile silindiğinde ilgili notlar da silinir.
+        )
+)
 public class Note implements Serializable {
-    @PrimaryKey(autoGenerate = true)
+    @PrimaryKey(autoGenerate = true) // Otomatik artan birincil anahtar
     private int id;
 
-    private String title;
-    private String content;
-    private int profileId;
-    private long createdAt;
-    private long updatedAt;
+    private String title; // Notun başlığı
+    private String content; // Notun içeriği
+    private int profileId; // Bu notun hangi profile ait olduğunu belirten foreign key
+    private long createdAt; // Notun oluşturulma zamanı (timestamp olarak)
+    private long updatedAt; // Notun güncellenme zamanı (timestamp olarak)
 
+    // Constructor: Yeni bir not oluşturulurken kullanılır
     public Note(String title, String content, int profileId) {
         this.title = title;
         this.content = content;
         this.profileId = profileId;
-        this.createdAt = System.currentTimeMillis();
-        this.updatedAt = System.currentTimeMillis();
+        this.createdAt = System.currentTimeMillis(); // Oluşturulma zamanı olarak şimdiki zaman atanır
+        this.updatedAt = System.currentTimeMillis(); // Güncelleme zamanı da başlangıçta şimdiki zaman olarak atanır
     }
 
-    // Getter ve Setter
+    // Getter ve Setter metodları: Note nesnesinin alanlarına erişim ve değiştirme için kullanılır
     public int getId() {
         return id;
     }
